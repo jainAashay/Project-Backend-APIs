@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.bezkoder</groupId>
-	<artifactId>spring-boot-mongodb-login</artifactId>
+	<artifactId>backend-apis</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>spring-boot-mongodb-login</name>
 	<description>Spring Boot and MongoDB: Login example with Spring Security, JWT - Rest API</description>
