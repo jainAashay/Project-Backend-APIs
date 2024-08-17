@@ -10,6 +10,7 @@ import com.example.project.repository.UserRepository;
 import com.example.project.payload.request.LoginRequest;
 import com.example.project.security.services.UserDetailsImpl;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
@@ -31,7 +32,7 @@ import com.example.project.payload.response.UserInfoResponse;
 import com.example.project.security.jwt.JwtUtils;
 
 
-@CrossOrigin(origins = "*", maxAge = 3600)
+@CrossOrigin(origins = "https://master--aashay-jain.netlify.app", maxAge = 3600)
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -53,7 +54,7 @@ public class AuthController {
   private static final SecureRandom secureRandom = new SecureRandom();
   private static final Base64.Encoder base64Encoder = Base64.getUrlEncoder();
 
-  @PostMapping("/signin")
+  @PostMapping("/login")
   public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
 
     User user=userRepository.findByUsername(loginRequest.getUsername()).isPresent()? userRepository.findByUsername(loginRequest.getUsername()).get() : null;
@@ -69,10 +70,15 @@ public class AuthController {
     UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
     ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(userDetails);
-
-    List<String> roles = List.of("ROLE_ADMIN");
-
+    ResponseCookie loggedInCookie = ResponseCookie.from("loggedIn", "true")
+            .httpOnly(false) // Makes the cookie accessible via JavaScript
+            .path("/")       // Cookie available for the root path
+            .sameSite("None") // Consider using "Lax" during local development
+            .secure(true)   // Since localhost is not HTTPS, set secure to false
+            .maxAge(24*60*60)
+            .build();
     return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
+            .header(HttpHeaders.SET_COOKIE,loggedInCookie.toString())
         .body(new UserInfoResponse(userDetails.getId(),
                                    userDetails.getUsername()));
   }
@@ -80,7 +86,15 @@ public class AuthController {
   @PostMapping("/signout")
   public ResponseEntity<?> logoutUser() {
     ResponseCookie cookie = jwtUtils.getCleanJwtCookie();
+    ResponseCookie loggedInCookie = ResponseCookie.from("loggedIn", null)
+            .httpOnly(false) // This makes the cookie accessible via JavaScript
+            .path("/")
+            .maxAge(0)
+            .sameSite("None")
+            .secure(true)
+            .build();
     return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString())
+            .header(HttpHeaders.SET_COOKIE,loggedInCookie.toString())
             .body(new MessageResponse("You've been signed out!"));
   }
 
